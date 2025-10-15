@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>TaskBoard Lite Balls</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>TaskBoard Lite</h1>
+
+    <form id="task-form">
+      <input id="task-input" placeholder="New task..." required />
+      <button>Add</button>
+    </form>
+
+    <div class="board">
+      <div class="column" data-status="todo">
+        <h2>To-Do</h2>
+        <ul id="todo-list"></ul>
+      </div>
+      <div class="column" data-status="progress">
+        <h2>In Progress</h2>
+        <ul id="progress-list"></ul>
+      </div>
+      <div class="column" data-status="done">
+        <h2>Done</h2>
+        <ul id="done-list"></ul>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
