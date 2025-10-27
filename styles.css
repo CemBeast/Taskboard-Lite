@@ -55,26 +55,87 @@ body {
   
   .task {
     background: white;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 10px;
-    margin-bottom: 8px;
+    border: 1.5px solid #dde1e7;
+    border-radius: 10px;
+    padding: 16px 14px;
+    margin-bottom: 12px;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    box-shadow: 0 2px 6px rgba(0,0,12,0.05);
+    transition: box-shadow 0.2s;
   }
-    /* Priority badge */
+  .task-title {
+    font-size: 1.09em;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #182248;
+    letter-spacing: 0.02em;
+  }
+  .details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-bottom: 8px;
+  }
   .badge {
     display: inline-block;
-    font-size: 12px;
-    padding: 2px 8px;
+    font-size: 0.94em;
+    padding: 3px 9px;
     border-radius: 999px;
-    border: 1px solid rgba(0,0,0,0.12);
-    margin-left: 8px;
+    border: 1px solid #bfcbe5;
+    margin-right: 0px;
+    background: #eff2fa;
+    font-weight: 500;
+    letter-spacing: 0.03em;
   }
-  .badge.low { background: #e8f5e9; }
-  .badge.med { background: #fff8e1; }
-  .badge.high { background: #ffebee; }
+  .badge.badge-rank {
+    background: #e2e6fb;
+    color: #3343a8;
+    border: 1px solid #b8bee8;
+  }
+  .badge.badge-date {
+    background: #fdffee;
+    color: #3e6748;
+    border: 1px solid #e5e8b3;
+  }
+  .badge.badge-days {
+    background: #f0f3ff;
+    color: #275691;
+    border: 1px solid #b6c6ea;
+  }
+  .badge.badge-completed {
+    background: #f4f8f3;
+    color: #3c5f42;
+    border: 1px solid #9bbbbb;
+  }
+  .badge.low { background: #e9f8e1; color: #30744c; }
+  .badge.med { background: #fff5e1; color: #826813; }
+  .badge.high { background: #fee9e7; color: #b2131a; }
+  .actions {
+    display: flex;
+    gap: 7px;
+    margin-top: 5px;
+  }
+  .edit-form > input[type="text"], .edit-form > select, .edit-form > input[type="date"] {
+    border-radius: 6px;
+    border: 1px solid #a9acba;
+    padding: 7px 8px;
+    font-size: 15px;
+  }
+  .edit-form > button {
+    padding: 7px 11px;
+    border-radius: 6px;
+    border: none;
+    background: #2563eb;
+    color: white;
+    margin-left: 0.5em;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.18s;
+  }
+  .edit-form > button[type="button"] {
+    background: #c0c3d8; color: #253254;
+  }
 
   .task .meta {
     font-size: 12px;

@@ -3,15 +3,15 @@ let tasks = loadTasks();
 
 // Helper to extract the main task description (strips 'by ...' or 'due: ...' phrases)
 function extractCleanTaskText(text) {
-  // Remove 'by <date>' (including by Month DD, by MM/DD, by YYYY-MM-DD, by tomorrow)
-  let clean = text.replace(/\bby\s+([a-zA-Z]+\s+\d{1,2}|\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?|\d{4}-\d{1,2}-\d{1,2}|tomorrow)\b/gi, "");
-  // Remove 'due: <date>' or 'due <date>'
+  // Remove 'by <date>', e.g. dates, weekdays
+  let clean = text.replace(/\bby\s+(next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/gi, "");
+  clean = clean.replace(/\bby\s+([a-zA-Z]+\s+\d{1,2}|\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?|\d{4}-\d{1,2}-\d{1,2}|tomorrow)\b/gi, "");
   clean = clean.replace(/\bdue\s*[:=]?\s*(\d{4}-\d{2}-\d{2})\b/gi, "");
-  // Remove leftover 'by', 'due', or extra spaces
-  clean = clean.replace(/\bby\b|\bdue\b/gi, "");
-  // Collapse whitespace, trim
+  clean = clean.replace(/\(\s*in\s+\d+\s*(day|week|month|year)s?\s*\)/gi, "");
+  clean = clean.replace(/in\s+\d+\s*(day|week|month|year)s?/gi, "");
+  // Remove leftover 'by', 'due', parentheses, or extra spaces
+  clean = clean.replace(/\bby\b|\bdue\b|[()]/gi, "");
   clean = clean.replace(/\s+/g, ' ').trim();
-  // Capitalize first letter of each word
   clean = clean.replace(/\b\w/g, c => c.toUpperCase());
   return clean;
 }
@@ -43,7 +43,21 @@ form.addEventListener("submit", (e) => {
 function moveTask(id, newStatus) {
   const task = tasks.find(t => t.id === id);
   if (task) {
-    task.status = newStatus;
+    // If we're undoing from 'done', and current status is 'done' and newStatus is not 'done', always set to 'progress'
+    if (task.status === 'done' && newStatus !== 'done') {
+      task.status = 'progress';
+      delete task.completedDate;
+    } else {
+      task.status = newStatus;
+      if (newStatus === "done") {
+        if (!task.completedDate) {
+          const d = new Date();
+          task.completedDate = d.toISOString().slice(0, 10);
+        }
+      } else {
+        delete task.completedDate;
+      }
+    }
     saveTasks();
     render();
   }
@@ -55,6 +69,14 @@ function deleteTask(id) {
   render();
 }
 
+let editingTaskId = null;
+
+function formatDateYYYYMMDD(d) {
+  if (!d) return '';
+  const dateObj = (typeof d === 'string') ? new Date(d) : d;
+  return dateObj.toISOString().slice(0, 10);
+}
+
 function render() {
   ["todo", "progress", "done"].forEach(status => {
     const list = document.getElementById(`${status}-list`);
@@ -62,29 +84,89 @@ function render() {
     tasks
       .filter(t => t.status === status)
       .slice()
-      .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority))
+      .sort((a, b) => {
+        const prio = priorityRank(a.priority) - priorityRank(b.priority);
+        if (prio !== 0) return prio;
+        if ((a.daysUntilDue !== null && b.daysUntilDue !== null)) {
+          return a.daysUntilDue - b.daysUntilDue;
+        }
+        if (a.daysUntilDue !== null && b.daysUntilDue === null) return -1;
+        if (a.daysUntilDue === null && b.daysUntilDue !== null) return 1;
+        return a.id - b.id;
+      })
       .forEach(t => {
         const li = document.createElement("li");
         li.className = "task";
-        // Render text + meta badge (priority + due + days)
-        li.innerHTML = `
-          <span>${t.text}</span>
-          <div class="meta">
+        if (editingTaskId === t.id) {
+          li.innerHTML = `<form class="edit-form" onsubmit="saveEdit(${t.id}); return false;" style="display:flex; gap:0.4em; align-items:center;">
+            <input type="text" id="edit-text-${t.id}" value="${t.text}" style="width:34%" disabled>
+            <select id="edit-prio-${t.id}" style="width:25%">
+              <option value="High" ${t.priority==='High'?'selected':''}>High</option>
+              <option value="Medium" ${t.priority==='Medium'?'selected':''}>Medium</option>
+              <option value="Low" ${t.priority==='Low'?'selected':''}>Low</option>
+            </select>
+            <input type="date" id="edit-date-${t.id}" value="${t.dueDate ? formatDateYYYYMMDD(t.dueDate) : ''}" style="width:25%">
+            <button type="submit">Save</button>
+            <button type="button" onclick="cancelEdit()">Cancel</button>
+          </form>`;
+        } else {
+          li.innerHTML = `
+          <span class="task-title">${t.text}</span>
+          <div class="details">
             <span class="badge ${badgeClass(t.priority)}">Priority: ${t.priority}</span>
-            ${t.dueDate ? `<span class="badge">${t.dueDate}</span>` : ""}
-            ${t.daysUntilDue !== null && t.dueDate ? `<span class="badge">Days left: ${t.daysUntilDue}</span>` : ""}
+            ${t.dueDate ? `<span class="badge badge-date">Due: ${t.dueDate}</span>` : ""}
+            ${status !== "done" && t.daysUntilDue !== null && t.dueDate ? `<span class="badge badge-days">Days left: ${t.daysUntilDue}</span>` : ""}
+            ${status === "done" && t.completedDate ? `<span class="badge badge-completed">Completed: ${t.completedDate}</span>` : ""}
           </div>
-          <div>
+          <div class="actions">
+            <button onclick="editTask(${t.id})">✏️</button>
             ${status !== "todo" ? `<button onclick="moveTask(${t.id}, 'todo')">↩️</button>` : ""}
             ${status !== "progress" ? `<button onclick="moveTask(${t.id}, 'progress')">🚧</button>` : ""}
             ${status !== "done" ? `<button onclick="moveTask(${t.id}, 'done')">✅</button>` : ""}
             <button onclick="deleteTask(${t.id})">🗑️</button>
           </div>
-        `;
+          `;
+        }
         list.appendChild(li);
       });
   });
 }
+
+function editTask(id) {
+  editingTaskId = id;
+  render();
+}
+
+function cancelEdit() {
+  editingTaskId = null;
+  render();
+}
+
+window.editTask = editTask;
+window.cancelEdit = cancelEdit;
+
+window.saveEdit = function(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  // Only allow editing priority and date (not label here)
+  const prio = document.getElementById("edit-prio-"+id).value;
+  const dateStr = document.getElementById("edit-date-"+id).value;
+  t.priority = prio;
+  t.dueDate = dateStr || null;
+  if (dateStr) {
+    const d = new Date(dateStr);
+    const today = new Date(); today.setHours(0,0,0,0);
+    t.daysUntilDue = Math.round((d - today) / (1000*60*60*24));
+    // Optionally: re-derive priority from due date (uncomment if you want)
+    // t.priority = computePriorityFromDue(d);
+  } else {
+    t.daysUntilDue = null;
+    t.dueDate = null;
+  }
+  saveTasks();
+  editingTaskId = null;
+  render();
+};
 
 function saveTasks() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
@@ -148,6 +230,21 @@ function extractDueDateAdvanced(text) {
       if (d < now) d = new Date(now.getFullYear()+1, monthIdx, parseInt(match[2]));
       if (!isNaN(d.getTime())) return d;
     }
+  }
+  // Try 'by <weekday>' or 'by next <weekday>'
+  match = /by\s+(next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i.exec(text || "");
+  if (match) {
+    const weekdays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    const now = new Date();
+    const todayIdx = now.getDay();
+    const targetIdx = weekdays.findIndex(day => day.startsWith(match[2].toLowerCase()));
+    let daysToAdd = (targetIdx - todayIdx + 7) % 7;
+    // If no 'next' and daysToAdd is 0 (today), go to next week's day
+    if (!match[1] && daysToAdd === 0) daysToAdd = 7;
+    // If 'next ...', always get the week after
+    if (match[1]) daysToAdd = daysToAdd === 0 ? 7 : daysToAdd + 7;
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysToAdd);
+    if (!isNaN(d.getTime())) return d;
   }
   // Try 'by tomorrow'
   if (/by\s+tomorrow/i.test(text || "")) {
