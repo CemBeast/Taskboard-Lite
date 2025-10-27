@@ -63,3 +63,21 @@ body {
     justify-content: space-between;
     align-items: center;
   }
+    /* Priority badge */
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(0,0,0,0.12);
+    margin-left: 8px;
+  }
+  .badge.low { background: #e8f5e9; }
+  .badge.med { background: #fff8e1; }
+  .badge.high { background: #ffebee; }
+
+  .task .meta {
+    font-size: 12px;
+    color: #475569;
+    margin-top: 6px;
+  }
