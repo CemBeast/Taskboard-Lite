@@ -1,6 +1,21 @@
 const STORAGE_KEY = "taskboard-lite-v1";
 let tasks = loadTasks();
 
+// Helper to extract the main task description (strips 'by ...' or 'due: ...' phrases)
+function extractCleanTaskText(text) {
+  // Remove 'by <date>' (including by Month DD, by MM/DD, by YYYY-MM-DD, by tomorrow)
+  let clean = text.replace(/\bby\s+([a-zA-Z]+\s+\d{1,2}|\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?|\d{4}-\d{1,2}-\d{1,2}|tomorrow)\b/gi, "");
+  // Remove 'due: <date>' or 'due <date>'
+  clean = clean.replace(/\bdue\s*[:=]?\s*(\d{4}-\d{2}-\d{2})\b/gi, "");
+  // Remove leftover 'by', 'due', or extra spaces
+  clean = clean.replace(/\bby\b|\bdue\b/gi, "");
+  // Collapse whitespace, trim
+  clean = clean.replace(/\s+/g, ' ').trim();
+  // Capitalize first letter of each word
+  clean = clean.replace(/\b\w/g, c => c.toUpperCase());
+  return clean;
+}
+
 const form = document.getElementById("task-form");
 const input = document.getElementById("task-input");
 
@@ -9,12 +24,16 @@ form.addEventListener("submit", (e) => {
   const text = input.value.trim();
   if (!text) return;
 
+  // Pass the original, not cleaned, to the prioritizer so 'by...', 'in X days', etc are found
   const newTask = {
     id: Date.now(),
-    text,
+    text: '', // will assign below
+    originalText: text, // keep the full user string if ever needed (hidden)
     status: "todo",
   };
-  applyPriorityRule(newTask); // <- fix argument name typo
+  applyPriorityRule(newTask, text);
+  // Only after all parsing, clean the label for display
+  newTask.text = extractCleanTaskText(text);
   tasks.push(newTask);
   saveTasks();
   render();
@@ -47,12 +66,13 @@ function render() {
       .forEach(t => {
         const li = document.createElement("li");
         li.className = "task";
-        // Render text + meta badge (priority + due)
+        // Render text + meta badge (priority + due + days)
         li.innerHTML = `
           <span>${t.text}</span>
           <div class="meta">
             <span class="badge ${badgeClass(t.priority)}">Priority: ${t.priority}</span>
             ${t.dueDate ? `<span class="badge">${t.dueDate}</span>` : ""}
+            ${t.daysUntilDue !== null && t.dueDate ? `<span class="badge">Days left: ${t.daysUntilDue}</span>` : ""}
           </div>
           <div>
             ${status !== "todo" ? `<button onclick="moveTask(${t.id}, 'todo')">↩️</button>` : ""}
@@ -103,7 +123,7 @@ function extractDueDateAdvanced(text) {
     if (!isNaN(d.getTime())) return d;
   }
   // Try MM/DD or MM/DD/YYYY
-  match = /by\s+(\d{1,2})[\/\-](\d{1,2})([\/\-](\d{2,4}))?/i.exec(text || "");
+  match = /by\s+(\d{1,2})[\/-](\d{1,2})([\/-](\d{2,4}))?/i.exec(text || "");
   if (match) {
     // Year fallback: this year, or next year if already passed
     const year = match[4]
@@ -135,15 +155,37 @@ function extractDueDateAdvanced(text) {
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1);
     return d;
   }
+  // Try 'in X days/weeks/months/years'
+  match = /in\s+(\d+)\s*(day|week|month|year)s?/i.exec(text || "");
+  if (match) {
+    const num = parseInt(match[1]);
+    const unit = match[2].toLowerCase();
+    const now = new Date();
+    let result = new Date(now);
+    if (unit === "day") result.setDate(now.getDate() + num);
+    if (unit === "week") result.setDate(now.getDate() + num * 7);
+    if (unit === "month") result.setMonth(now.getMonth() + num);
+    if (unit === "year") result.setFullYear(now.getFullYear() + num);
+    if (!isNaN(result.getTime())) return result;
+  }
   // Add more NLP rules easily here
   return null;
 }
 
-function applyPriorityRule(task) {
-  // Advanced NLP parser for due date
-  const due = extractDueDateAdvanced(task.text);
+function applyPriorityRule(task, rawText) {
+  // Advanced NLP parser for due date; use rawText if provided
+  const due = extractDueDateAdvanced(rawText !== undefined ? rawText : task.text);
   task.dueDate = due ? due.toISOString().slice(0,10) : null;
   task.priority = computePriorityFromDue(due);
+  // Calculate daysUntilDue only if due exists
+  if (due) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const timeDiff = due - today; // ms
+    const dayDiff = Math.round(timeDiff / (1000*60*60*24));
+    task.daysUntilDue = dayDiff;
+  } else {
+    task.daysUntilDue = null;
+  }
 }
 
 function priorityRank(p) {
@@ -163,5 +205,26 @@ const metaHtml = `
     ${task.dueDate ? `<span class="badge">${task.dueDate}</span>` : ""}
   </div>
 `;
+
+// Migration for cleaning up old tasks
+function migrateTaskTexts() {
+  let changed = false;
+  tasks.forEach(task => {
+    // Use the original input if available for cleaning
+    const raw = task.originalText || task.text;
+    const clean = extractCleanTaskText(raw);
+    if (task.text !== clean && clean.length > 0) {
+      task.text = clean;
+      changed = true;
+    }
+  });
+  if (changed) {
+    saveTasks();
+    render();
+  }
+}
+
+// Run migration on load
+migrateTaskTexts();
 
 render();
