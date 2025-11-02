@@ -28,7 +28,7 @@ form.addEventListener("submit", (e) => {
   const newTask = {
     id: Date.now(),
     text: '', // will assign below
-    originalText: text, // keep the full user string if ever needed (hidden)
+    originalText: text, // keep the full user string if ever needed (it is hidden)
     status: "todo",
   };
   applyPriorityRule(newTask, text);
