@@ -43,7 +43,7 @@ form.addEventListener("submit", (e) => {
 function moveTask(id, newStatus) {
   const task = tasks.find(t => t.id === id);
   if (task) {
-    // If we're undoing from 'done', and current status is 'done' and newStatus is not 'done', always set to 'progress'
+    // If we're undoing from 'done', and current status is 'done' and newStatus is not 'done', always set to 'in-progress'
     if (task.status === 'done' && newStatus !== 'done') {
       task.status = 'progress';
       delete task.completedDate;
