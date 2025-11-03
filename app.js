@@ -77,7 +77,37 @@ function formatDateYYYYMMDD(d) {
   return dateObj.toISOString().slice(0, 10);
 }
 
+function renderDashboard() {
+  const section = document.getElementById('dashboard-section');
+  if (!section) return;
+  const todoCount = tasks.filter(t=>t.status==='todo').length;
+  const progCount = tasks.filter(t=>t.status==='progress').length;
+  const doneCount = tasks.filter(t=>t.status==='done').length;
+  const total = tasks.length;
+  const pctDone = total ? Math.round(100*doneCount/total) : 0;
+  const avgCompletion = calcAvgCompletionDays();
+  const overdue = countOverdueTasks();
+  let soonest = getSoonestTasks();
+  let soonestLabel = soonest.length ? soonest[0].text : '—';
+  let soonestDue = soonest.length && soonest[0].dueDate ? soonest[0].dueDate : '';
+
+  section.innerHTML = `
+    <div class="dashboard-grid">
+      <div class="dash-block"><div class="dash-title">To-Do</div><div class="dash-value">${todoCount}</div></div>
+      <div class="dash-block"><div class="dash-title">In Progress</div><div class="dash-value">${progCount}</div></div>
+      <div class="dash-block"><div class="dash-title">Done</div><div class="dash-value">${doneCount}</div></div>
+      <div class="dash-block"><div class="dash-title">Total Tasks</div><div class="dash-value">${total}</div></div>
+      <div class="dash-block"><div class="dash-title">% Complete</div><div class="dash-value">${pctDone}%</div></div>
+      <div class="dash-block"><div class="dash-title">Avg Completion (days)</div><div class="dash-value">${avgCompletion!==null?avgCompletion:'—'}</div></div>
+      <div class="dash-block"><div class="dash-title">Overdue</div><div class="dash-value dash-overdue">${overdue}</div></div>
+      <div class="dash-block dash-wide"><div class="dash-title">Soonest Upcoming Task</div><div class="dash-value-small">${soonestLabel} ${soonestDue?`<span style='color:#254788'>(Due ${soonestDue})</span>`:''}</div></div>
+    </div>
+  `;
+}
+
 function render() {
+  renderDashboard();
+  renderReminders();
   ["todo", "progress", "done"].forEach(status => {
     const list = document.getElementById(`${status}-list`);
     list.innerHTML = "";
@@ -323,5 +353,64 @@ function migrateTaskTexts() {
 
 // Run migration on load
 migrateTaskTexts();
+
+function getSoonestTasks() {
+  // Only tasks with a due date, not done
+  return tasks
+    .filter(t => t.status !== 'done' && t.dueDate)
+    .slice()
+    .sort((a, b) => {
+      // Earliest due date first
+      return new Date(a.dueDate) - new Date(b.dueDate);
+    })
+    .slice(0, 5);
+}
+
+function renderReminders() {
+  const list = document.getElementById('reminders-list');
+  if (!list) return;
+  list.innerHTML = '';
+  const soonest = getSoonestTasks();
+  if (soonest.length === 0) {
+    list.innerHTML = '<li class="none">No upcoming tasks with due dates!</li>';
+    return;
+  }
+  soonest.forEach(t => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <strong>${t.text}</strong>
+      <span class="reminder-due">${t.dueDate ? `Due: ${t.dueDate}` : ''}</span>
+      ${t.daysUntilDue !== null && t.dueDate ? `<span class="reminder-days">(${t.daysUntilDue} days left)</span>` : ''}
+    `;
+    li.className = 'reminder-task';
+    list.appendChild(li);
+  });
+}
+
+function calcAvgCompletionDays() {
+  // Find tasks that are 'done' and have a completedDate and dueDate
+  const completed = tasks.filter(t => t.status === 'done' && t.completedDate);
+  if (completed.length === 0) return null;
+  let totalDays = 0;
+  let count = 0;
+  completed.forEach(t => {
+    if (t.completedDate) {
+      // Prefer dueDate if present, else use task id (creation) as start
+      let startDate = t.dueDate ? new Date(t.dueDate) : new Date(Number(t.id));
+      let endDate = new Date(t.completedDate);
+      let days = Math.round((endDate - startDate)/(1000*60*60*24));
+      if (!isNaN(days)) {
+        totalDays += Math.abs(days);
+        count++;
+      }
+    }
+  });
+  return count === 0 ? null : (totalDays / count).toFixed(2);
+}
+
+function countOverdueTasks() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  return tasks.filter(t => t.status !== 'done' && t.dueDate && new Date(t.dueDate) < today).length;
+}
 
 render();

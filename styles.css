@@ -142,3 +142,111 @@ body {
     color: #475569;
     margin-top: 6px;
   }
+
+#reminders-section {
+  margin-bottom: 22px;
+  background: #f9fafc;
+  border: 1.5px solid #d2d8e5;
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,38, 0.04);
+}
+#reminders-section h2 {
+  font-size: 1.13em;
+  margin: 0 0 12px 0;
+  color: #1c2353;
+}
+#reminders-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.reminder-task {
+  background: #fff;
+  margin-bottom: 9px;
+  border-radius: 7px;
+  border-left: 4px solid #4f7dcf;
+  padding: 9px 14px;
+  font-size: 1.03em;
+  box-shadow: 0 2px 5px rgba(0,24,32,0.03);
+  color: #1f2e3e;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.reminder-task:last-child { margin-bottom: 0; }
+.reminder-due {
+  color: #254788;
+  font-size: 0.97em;
+  margin-left: 8px;
+}
+.reminder-days {
+  color: #b91a1c;
+  font-size: 0.93em;
+  margin-left: 6px;
+  font-weight: 600;
+}
+#reminders-list .none {
+  color: #636a89;
+  background: none;
+  border: none;
+  font-size: 1em;
+  box-shadow: none;
+  padding: 8px 5px;
+}
+#dashboard-section {
+  margin-bottom: 18px;
+  padding: 14px 0 10px 0;
+  background: #f1f4fb;
+  border-radius: 11px;
+  box-shadow: 0 2px 14px rgba(0,24,98,0.05);
+}
+.dashboard-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: stretch;
+  justify-items: center;
+  margin: 0 0 0 0;
+}
+.dash-block {
+  background: #fff;
+  border-radius: 9px;
+  box-shadow: 0 1px 6px rgba(0,12,30,0.08);
+  padding: 14px 20px;
+  text-align: center;
+  min-width: 118px;
+}
+.dash-block .dash-title {
+  font-size: 0.98em;
+  color: #2360a7;
+  opacity: 0.79;
+  margin-bottom: 2px;
+}
+.dash-block .dash-value {
+  font-size: 1.48em;
+  font-weight: 700;
+  color: #1b2747;
+  margin-bottom: 0px;
+}
+.dash-block .dash-value-small {
+  font-size: 1.1em;
+  color: #283890;
+  margin-top: 5px;
+}
+.dash-block.dash-wide {
+  grid-column: span 2;
+}
+.dash-overdue {
+  color: #d42238;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+@media (max-width: 800px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dash-block.dash-wide {
+    grid-column: span 2;
+  }
+}
