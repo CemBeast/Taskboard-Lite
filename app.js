@@ -170,6 +170,7 @@ function render() {
         list.appendChild(li);
       });
   });
+  renderPriorityThresholds();
 }
 
 function editTask(id) {
@@ -227,12 +228,25 @@ function extractDueDate(text) {
   return isNaN(d.getTime()) ? null : d;
 }
 
+// Priority thresholds
+const PRIORITY_SETTINGS_KEY = "taskboard-priority-thresholds-v1";
+function loadPriorityThresholds() {
+  return JSON.parse(localStorage.getItem(PRIORITY_SETTINGS_KEY) ||
+    JSON.stringify({ high: 3, med: 7, low: 14 }));
+}
+function savePriorityThresholds(obj) {
+  localStorage.setItem(PRIORITY_SETTINGS_KEY, JSON.stringify(obj));
+}
+let priorityThresholds = loadPriorityThresholds();
+
+// Update computePriorityFromDue to use user thresholds
 function computePriorityFromDue(dueDate) {
   if (!dueDate) return "Low";
   const today = new Date(); today.setHours(0,0,0,0);
   const days = Math.floor((dueDate - today) / (1000*60*60*24));
-  if (days < 3) return "High";
-  if (days < 7) return "Medium";
+  if (days <= priorityThresholds.high) return "High";
+  if (days <= priorityThresholds.med) return "Medium";
+  if (days <= priorityThresholds.low) return "Low";
   return "Low";
 }
 
@@ -422,5 +436,56 @@ function countOverdueTasks() {
   const today = new Date(); today.setHours(0,0,0,0);
   return tasks.filter(t => t.status !== 'done' && t.dueDate && new Date(t.dueDate) < today).length;
 }
+
+function renderPriorityThresholds() {
+  const disp = document.getElementById('priority-display');
+  if (!disp) return;
+  // Set editable spans for high, med, and low
+  disp.querySelector('[data-prio="high"]').innerHTML = `<span class="priority-num" data-edit="high">${priorityThresholds.high}</span>`;
+  disp.querySelector('[data-prio="med"]').innerHTML = `<span class="priority-num" data-edit="med">${priorityThresholds.med}</span>`;
+  disp.querySelector('[data-prio="low"]').innerHTML = `<span class="priority-num" data-edit="low">${priorityThresholds.low}</span>`;
+  document.querySelectorAll('.priority-num').forEach(span => {
+    span.onclick = function() {
+      if (disp.querySelector('input')) return; // Only 1 edit at a time
+      const prio = this.getAttribute('data-edit');
+      const oldVal = priorityThresholds[prio];
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.value = oldVal;
+      input.min = 1;
+      input.className = 'priority-edit-input';
+      input.style.width = '54px';
+      input.onblur = input.onkeydown = evt => {
+        if (evt.type === 'keydown' && evt.key !== 'Enter') return;
+        let high = parseInt(disp.querySelector('[data-edit="high"] input')?.value||priorityThresholds.high, 10);
+        let med = parseInt(disp.querySelector('[data-edit="med"] input')?.value||priorityThresholds.med, 10);
+        let low = parseInt(disp.querySelector('[data-edit="low"] input')?.value||priorityThresholds.low, 10);
+        if (prio==='high') high = parseInt(input.value||oldVal,10);
+        if (prio==='med') med = parseInt(input.value||oldVal,10);
+        if (prio==='low') low = parseInt(input.value||oldVal,10);
+        const err = document.getElementById("priority-error");
+        if (!(high > 0 && med > high && low > med)) {
+          err.textContent = 'Require: 0 < High < Medium < Low (days)';
+          err.style.display = '';
+          input.focus();
+          return;
+        }
+        err.textContent = '';
+        err.style.display = 'none';
+        priorityThresholds = { high, med, low };
+        savePriorityThresholds(priorityThresholds);
+        renderPriorityThresholds();
+        render(); // Re-render rest of UI (for prio update)
+      };
+      this.replaceWith(input);
+      input.focus();
+      input.select();
+    };
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderPriorityThresholds();
+});
 
 render();
