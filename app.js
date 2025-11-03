@@ -95,12 +95,12 @@ function renderDashboard() {
     <div class="dashboard-grid">
       <div class="dash-block"><div class="dash-title">To-Do</div><div class="dash-value">${todoCount}</div></div>
       <div class="dash-block"><div class="dash-title">In Progress</div><div class="dash-value">${progCount}</div></div>
-      <div class="dash-block"><div class="dash-title">Done</div><div class="dash-value">${doneCount}</div></div>
+      <div class="dash-block"><div class="dash-title">Done</div><div class="dash-value dash-done">${doneCount}</div></div>
       <div class="dash-block"><div class="dash-title">Total Tasks</div><div class="dash-value">${total}</div></div>
       <div class="dash-block"><div class="dash-title">% Complete</div><div class="dash-value">${pctDone}%</div></div>
       <div class="dash-block"><div class="dash-title">Avg Completion (days)</div><div class="dash-value">${avgCompletion!==null?avgCompletion:'—'}</div></div>
       <div class="dash-block"><div class="dash-title">Overdue</div><div class="dash-value dash-overdue">${overdue}</div></div>
-      <div class="dash-block dash-wide"><div class="dash-title">Soonest Upcoming Task</div><div class="dash-value-small">${soonestLabel} ${soonestDue?`<span style='color:#254788'>(Due ${soonestDue})</span>`:''}</div></div>
+      <div class="dash-block dash-wide"><div class="dash-title">Soonest Upcoming Task</div><div class="dash-value-small">${soonestLabel} ${soonestDue?`<span class='dashboard-soonest-date'>(Due ${soonestDue})</span>`:''}</div></div>
     </div>
   `;
 }
@@ -149,11 +149,21 @@ function render() {
             ${status === "done" && t.completedDate ? `<span class="badge badge-completed">Completed: ${t.completedDate}</span>` : ""}
           </div>
           <div class="actions">
-            <button onclick="editTask(${t.id})">✏️</button>
-            ${status !== "todo" ? `<button onclick="moveTask(${t.id}, 'todo')">↩️</button>` : ""}
-            ${status !== "progress" ? `<button onclick="moveTask(${t.id}, 'progress')">🚧</button>` : ""}
-            ${status !== "done" ? `<button onclick="moveTask(${t.id}, 'done')">✅</button>` : ""}
-            <button onclick="deleteTask(${t.id})">🗑️</button>
+            <button class="icon-btn" title="Edit" onclick="editTask(${t.id})">
+              <svg class="icon" viewBox="0 0 20 20"><path d="M4 13.5V16h2.5L15.81 6.69a1 1 0 0 0 0-1.41l-1.09-1.09a1 1 0 0 0-1.41 0L4 13.5z" stroke="var(--brand)"/></svg>
+            </button>
+            ${status !== "todo" ? `<button class="icon-btn" title="Move to To-Do" onclick="moveTask(${t.id}, 'todo')">
+              <svg class="icon" viewBox="0 0 20 20"><path d="M15 9v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9" stroke="var(--brand-2)"/><path d="M7 10l3-3 3 3M10 3v8" stroke="var(--brand-2)"/></svg>
+            </button>` : ""}
+            ${status !== "progress" ? `<button class="icon-btn" title="Move to In Progress" onclick="moveTask(${t.id}, 'progress')">
+              <svg class="icon" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5" stroke="var(--accent)" /><path d="M10 5.5v4l3 3" stroke="var(--accent)"/></svg>
+            </button>` : ""}
+            ${status !== "done" ? `<button class="icon-btn" title="Mark as Done" onclick="moveTask(${t.id}, 'done')">
+              <svg class="icon" viewBox="0 0 20 20"><path d="M5 11l4 4 6-8" stroke="var(--ok)"/></svg>
+            </button>` : ""}
+            <button class="icon-btn" title="Delete" onclick="deleteTask(${t.id})">
+              <svg class="icon" viewBox="0 0 20 20"><rect x="6.5" y="8.5" width="1" height="5" rx=".5" fill="var(--danger)"/><rect x="12.5" y="8.5" width="1" height="5" rx=".5" fill="var(--danger)"/><rect x="8" y="2.5" width="4" height="2" rx="1" fill="var(--panel)" stroke="var(--danger)"/><rect x="4" y="5" width="12" height="10" rx="2" stroke="var(--danger)" fill="none" /></svg>
+            </button>
           </div>
           `;
         }
