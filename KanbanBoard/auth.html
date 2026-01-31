@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - TaskBoard</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .auth-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: var(--bg);
+    }
+    
+    .auth-box {
+      background: var(--card-bg);
+      padding: 2.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      max-width: 400px;
+      width: 100%;
+    }
+    
+    .auth-box h1 {
+      color: var(--brand);
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+    
+    .auth-box p {
+      text-align: center;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+    
+    .auth-box input {
+      width: 100%;
+      padding: 0.8rem;
+      margin: 10px 0;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    
+    .auth-box input:focus {
+      outline: none;
+      border-color: var(--brand);
+    }
+    
+    .auth-box button {
+      width: 100%;
+      padding: 0.8rem;
+      margin: 10px 0;
+      border-radius: 6px;
+      border: none;
+      background: var(--brand);
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .auth-box button:hover {
+      background: var(--brand-2);
+      transform: translateY(-1px);
+    }
+    
+    .google-btn {
+      background: #4285F4 !important;
+    }
+    
+    .google-btn:hover {
+      background: #357ae8 !important;
+    }
+    
+    .auth-link {
+      text-align: center;
+      margin-top: 1rem;
+      color: var(--text-muted);
+    }
+    
+    .auth-link a {
+      color: var(--brand);
+      text-decoration: none;
+    }
+    
+    .auth-link a:hover {
+      text-decoration: underline;
+    }
+    
+    .error {
+      color: var(--danger);
+      margin-top: 1rem;
+      text-align: center;
+      padding: 0.5rem;
+      background: rgba(239, 68, 68, 0.1);
+      border-radius: 4px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-box">
+      <h1>🎯 TaskBoard Lite</h1>
+      <p>Organize your tasks with AI-powered priorities</p>
+      
+      <input type="email" id="email" placeholder="Email" autocomplete="email">
+      <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+      
+      <button onclick="login()">Sign In</button>
+      <button onclick="signup()">Create Account</button>
+      <button onclick="loginWithGoogle()" class="google-btn">Sign in with Google</button>
+      
+      <div id="error-message" class="error"></div>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="Database/firebase-config.js"></script>
+  
+  <script>
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      if (!email || !password) {
+        showError('Please enter email and password');
+        return;
+      }
+      
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        console.log('✅ Login successful');
+        window.location.href = 'index.html';
+      } catch (error) {
+        console.error('❌ Login failed:', error);
+        showError(error.message);
+      }
+    }
+
+    async function signup() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      if (!email || !password) {
+        showError('Please enter email and password');
+        return;
+      }
+      
+      if (password.length < 6) {
+        showError('Password must be at least 6 characters');
+        return;
+      }
+      
+      try {
+        await auth.createUserWithEmailAndPassword(email, password);
+        console.log('✅ Account created successfully');
+        window.location.href = 'index.html';
+      } catch (error) {
+        console.error('❌ Signup failed:', error);
+        showError(error.message);
+      }
+    }
+
+    async function loginWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      
+      try {
+        await auth.signInWithPopup(provider);
+        console.log('✅ Google login successful');
+        window.location.href = 'index.html';
+      } catch (error) {
+        console.error('❌ Google login failed:', error);
+        showError(error.message);
+      }
+    }
+
+    function showError(message) {
+      const errorDiv = document.getElementById('error-message');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+    }
+
+    // If already logged in, redirect to app
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        window.location.href = 'index.html';
+      }
+    });
+  </script>
+</body>
+</html>
+

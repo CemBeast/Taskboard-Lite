@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TaskBoard Lite — Neon</title>
+    <meta name="theme-color" content="#0b1020" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+<body>
+  <main class="container">
+    <!-- User Info Bar -->
+    <div class="user-info-bar">
+      <div class="user-info">
+        <span id="user-email" class="user-email">Loading...</span>
+      </div>
+      <button onclick="logout()" class="logout-btn">Sign Out</button>
+    </div>
+
+    <section id="dashboard-section">
+      <!-- Dashboard stats will be filled by JS -->
+    </section>
+
+    <h1>TaskBoard Lite</h1>
+
+    <section id="reminders-section">
+      <h2>Reminders: Upcoming Tasks</h2>
+      <ul id="reminders-list"></ul>
+    </section>
+
+    <form id="task-form">
+      <input id="task-input" placeholder="New task..." required />
+      <button>Add</button>
+      <button type="button" onclick="showAINotification()" title="Get AI reminder about upcoming tasks">🤖 AI Reminder</button>
+      <button type="button" onclick="showAIReport()" title="Get AI analysis of your productivity">📊 AI Report</button>
+      <button type="button" onclick="checkRemindersNow()" class="notification-btn" title="Check for upcoming tasks now">🔔 Check Reminders</button>
+      <button type="button" onclick="sendTestNotification()" style="background: #9a6bff !important;" title="Send a test notification to see where it appears">🧪 Test Notification</button>
+    </form>
+    
+    <div class="board">
+      <div class="column" data-status="todo">
+        <h2>To-Do</h2>
+        <ul id="todo-list"></ul>
+      </div>
+      <div class="column" data-status="progress">
+        <h2>In Progress</h2>
+        <ul id="progress-list"></ul>
+      </div>
+      <div class="column" data-status="done">
+        <h2>Done</h2>
+        <ul id="done-list"></ul>
+      </div>
+    </div>
+    <section id="priority-settings">
+      <div id="priority-display">
+        <strong>Priority thresholds:</strong>
+        High Priority: ≤ <span class="priority-val" data-prio="high"></span> days
+        <span class="dot">•</span>
+        Medium Priority: ≤ <span class="priority-val" data-prio="med"></span> days
+        <span class="dot">•</span>
+        Low Priority: > <span class="priority-val" data-prio="low-display"></span> days
+        <span id="priority-error" style="display:none; margin-left:12px;"></span>
+      </div>
+    </section>
+
+    <!-- Notification Settings -->
+    <section id="notification-settings" class="notification-settings">
+      <h3>🔔 Notification Settings</h3>
+      <div id="notification-settings-container" class="notification-controls">
+        <div class="notification-row">
+          <label class="notification-toggle">
+            <input 
+              type="checkbox" 
+              id="notification-enabled" 
+              onchange="toggleNotifications(this.checked)"
+            />
+            <span>Enable browser notifications</span>
+          </label>
+        </div>
+        
+        <div class="notification-row">
+          <label for="notification-days">Notify me when tasks are due in:</label>
+          <select 
+            id="notification-days" 
+            onchange="updateDaysAhead(this.value)"
+            class="notification-select"
+          >
+            <option value="0">Today</option>
+            <option value="1" selected>1 day</option>
+            <option value="2">2 days</option>
+            <option value="3">3 days</option>
+            <option value="7">1 week</option>
+          </select>
+        </div>
+        
+        <div class="notification-row">
+          <label for="notification-time">Preferred notification time:</label>
+          <input 
+            type="time" 
+            id="notification-time" 
+            value="09:00" 
+            onchange="updateNotificationTime(this.value)"
+            class="notification-time"
+          />
+          <span class="notification-hint">⏰ Notifications check when you open the app</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="Database/firebase-config.js"></script>
+  
+  <script src="Agents/aiAgent.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Task Parser Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0b1020;
+            color: #e0e6f0;
+        }
+        .test-section {
+            background: #1a2332;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #2a3648;
+        }
+        button {
+            background: linear-gradient(180deg, #68b7e6, #5198c2);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: linear-gradient(180deg, #67bfec, #68b7e6);
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #2a3648;
+            background: #0d1620;
+            color: #e0e6f0;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0d1620;
+            border-radius: 6px;
+            border: 1px solid #2a3648;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .info { color: #60a5fa; }
+        .warning { color: #fbbf24; }
+        h1 { color: #68b7e6; }
+        h2 { color: #a98cff; font-size: 18px; }
+        .result-box {
+            background: rgba(104, 183, 230, 0.1);
+            border: 2px solid #68b7e6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .result-item {
+            margin: 8px 0;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+        .label {
+            color: #a98cff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🤖 AI Task Parser Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Your Task Input</h2>
+        <p>Enter a task with date information to see how the AI parses it:</p>
+        <input type="text" id="task-input" placeholder="e.g., Finish homework by tomorrow">
+        <button onclick="testParse()">Parse with AI</button>
+        <button onclick="runAllTests()">Run All Test Cases</button>
+        <div id="output"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Example Test Cases</h2>
+        <button onclick="testCase('Finish homework by tomorrow')">Test: "Finish homework by tomorrow"</button>
+        <button onclick="testCase('Submit report due Friday')">Test: "Submit report due Friday"</button>
+        <button onclick="testCase('Review code in 3 days')">Test: "Review code in 3 days"</button>
+        <button onclick="testCase('Call client by 11/20')">Test: "Call client by 11/20"</button>
+        <button onclick="testCase('Finish homework by 8pm Friday')">Test: "Finish homework by 8pm Friday"</button>
+        <button onclick="testCase('Call at 10:20AM tomorrow')">Test: "Call at 10:20AM tomorrow"</button>
+        <button onclick="testCase('meeting at midnight Thursday')">Test: "meeting at midnight Thursday"</button>
+        <button onclick="testCase('review by 23:19 11/20/2025')">Test: "review by 23:19 11/20/2025"</button>
+        <button onclick="testCase('Complete urgent task')">Test: "Complete urgent task"</button>
+        <button onclick="testCase('Meeting preparation')">Test: "Meeting preparation"</button>
+    </div>
+
+    <script src="aiAgent.js"></script>
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function displayResult(result, originalText) {
+            output.innerHTML += `
+<div class="result-box">
+    <div class="result-item"><span class="label">Original Input:</span> ${originalText}</div>
+    <div class="result-item"><span class="label">Clean Text:</span> ${result.cleanText}</div>
+    <div class="result-item"><span class="label">Due Date:</span> ${result.dueDate || '--'}</div>
+    <div class="result-item"><span class="label">Due Time:</span> ${result.dueTime || '--'}</div>
+    <div class="result-item"><span class="label">Priority:</span> ${result.priority}</div>
+</div>
+`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function testParse() {
+            const input = document.getElementById('task-input');
+            const text = input.value.trim();
+            
+            if (!text) {
+                alert('Please enter a task!');
+                return;
+            }
+
+            output.innerHTML = '';
+            log('🚀 Starting AI parsing test...', 'info');
+            log(`Input: "${text}"`, 'info');
+            log('', 'info');
+
+            try {
+                log('Calling parseTaskWithAI()...', 'info');
+                const result = await parseTaskWithAI(text);
+                
+                log('✅ SUCCESS!', 'success');
+                log('', 'success');
+                displayResult(result, text);
+
+            } catch (error) {
+                log('', 'error');
+                log('❌ ERROR:', 'error');
+                log(error.message, 'error');
+                console.error(error);
+            }
+        }
+
+        async function testCase(text) {
+            document.getElementById('task-input').value = text;
+            await testParse();
+        }
+
+        async function runAllTests() {
+            output.innerHTML = '';
+            log('🧪 Running all test cases...', 'info');
+            log('', 'info');
+
+            const testCases = [
+                'Finish homework by tomorrow',
+                'Submit report due Friday',
+                'Review code in 3 days',
+                'Call client by 11/20',
+                'Complete urgent task',
+                'Meeting preparation',
+                'Buy groceries by next Monday',
+                'Dentist appointment due 11/15',
+            ];
+
+            for (const testInput of testCases) {
+                try {
+                    log(`\n📝 Testing: "${testInput}"`, 'info');
+                    const result = await parseTaskWithAI(testInput);
+                    log(`  → Clean: "${result.cleanText}"`, 'success');
+                    log(`  → Date: ${result.dueDate || 'None'}`, 'success');
+                    log(`  → Priority: ${result.priority}`, 'success');
+                    
+                    // Small delay to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                } catch (error) {
+                    log(`  → Error: ${error.message}`, 'error');
+                }
+            }
+
+            log('\n✅ All tests complete!', 'success');
+        }
+
+        // Auto-focus input on load
+        window.addEventListener('load', () => {
+            document.getElementById('task-input').focus();
+            log('Ready! Enter a task or click a test button.', 'info');
+        });
+    </script>
+</body>
+</html>
+

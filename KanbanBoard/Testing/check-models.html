@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Available Gemini Models</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0b1020;
+            color: #e0e6f0;
+        }
+        button {
+            background: linear-gradient(180deg, #68b7e6, #5198c2);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: linear-gradient(180deg, #67bfec, #68b7e6);
+        }
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0d1620;
+            border-radius: 6px;
+            border: 1px solid #2a3648;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .info { color: #60a5fa; }
+        .warning { color: #fbbf24; }
+        h1 { color: #68b7e6; }
+        .model-box {
+            background: rgba(104, 183, 230, 0.1);
+            border: 1px solid #68b7e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Check Available Gemini Models</h1>
+    <p>This will check which Gemini models are available with your API key.</p>
+    
+    <button onclick="checkModels()">Check Available Models</button>
+    <button onclick="testModel('gemini-pro')">Test: gemini-pro</button>
+    <button onclick="testModel('gemini-1.5-flash')">Test: gemini-1.5-flash</button>
+    <button onclick="testModel('gemini-2.0-flash-exp')">Test: gemini-2.0-flash-exp</button>
+    
+    <div id="output"></div>
+
+    <script src="../Agents/aiAgent.js"></script>
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function checkModels() {
+            output.innerHTML = '';
+            log('🚀 Checking available models...', 'info');
+            log('', 'info');
+
+            const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`;
+
+            try {
+                const response = await fetch(listUrl);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log('❌ Error fetching models:', 'error');
+                    log(errorText, 'error');
+                    return;
+                }
+
+                const data = await response.json();
+                log('✅ Successfully fetched models!', 'success');
+                log('', 'success');
+
+                if (data.models && data.models.length > 0) {
+                    log(`Found ${data.models.length} models:`, 'success');
+                    log('', 'info');
+                    
+                    data.models.forEach(model => {
+                        const name = model.name.replace('models/', '');
+                        const supportsGenerate = model.supportedGenerationMethods?.includes('generateContent');
+                        
+                        log(`📦 ${name}`, supportsGenerate ? 'success' : 'warning');
+                        log(`   Supports generateContent: ${supportsGenerate ? 'YES ✅' : 'NO ❌'}`, supportsGenerate ? 'success' : 'warning');
+                        
+                        if (model.description) {
+                            log(`   Description: ${model.description}`, 'info');
+                        }
+                        log('', 'info');
+                    });
+
+                    // Recommend the best model
+                    const bestModel = data.models.find(m => 
+                        m.supportedGenerationMethods?.includes('generateContent') &&
+                        (m.name.includes('flash') || m.name.includes('pro'))
+                    );
+
+                    if (bestModel) {
+                        const modelName = bestModel.name.replace('models/', '');
+                        log('', 'success');
+                        log('🎯 RECOMMENDED MODEL:', 'success');
+                        log(`   ${modelName}`, 'success');
+                        log('', 'success');
+                        log(`Update aiAgent.js line 7 to:`, 'info');
+                        log(`const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent';`, 'warning');
+                    }
+                } else {
+                    log('No models found!', 'error');
+                }
+
+            } catch (error) {
+                log('', 'error');
+                log('❌ ERROR:', 'error');
+                log(error.message, 'error');
+                console.error(error);
+            }
+        }
+
+        async function testModel(modelName) {
+            output.innerHTML = '';
+            log(`🧪 Testing model: ${modelName}`, 'info');
+            log('', 'info');
+
+            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
+
+            try {
+                const response = await fetch(testUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: 'Say "Hello! This model works!"'
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.1,
+                            maxOutputTokens: 50,
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`❌ Model ${modelName} failed:`, 'error');
+                    log(errorText, 'error');
+                    return;
+                }
+
+                const data = await response.json();
+                log(`✅ Model ${modelName} WORKS!`, 'success');
+                log('', 'success');
+                log('Response:', 'info');
+                log(JSON.stringify(data, null, 2), 'info');
+
+                if (data.candidates && data.candidates[0]) {
+                    const aiText = data.candidates[0].content.parts[0].text;
+                    log('', 'success');
+                    log(`AI said: ${aiText}`, 'success');
+                }
+
+            } catch (error) {
+                log('', 'error');
+                log('❌ ERROR:', 'error');
+                log(error.message, 'error');
+                console.error(error);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            log('Ready! Click "Check Available Models" to start.', 'info');
+        });
+    </script>
+</body>
+</html>
+

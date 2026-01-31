@@ -1,0 +1,48 @@
+# =========================
+# OS / Editor junk
+# =========================
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+.vscode/
+.idea/
+
+# =========================
+# Node / JS
+# =========================
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+dist/
+build/
+coverage/
+.cache/
+
+# =========================
+# Env / secrets (never commit)
+# =========================
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Local Firebase config (contains project keys/ids)
+KanbanBoard/Database/firebase-config.js
+
+# Local Gemini / AI key file (do NOT commit real key)
+KanbanBoard/Agents/aiAgent.js
+
+# Optional: local copies you might create
+KanbanBoard/Database/firebase-config.local.js
+KanbanBoard/Agents/aiAgent.local.js
+
+# =========================
+# Logs
+# =========================
+*.log
+
